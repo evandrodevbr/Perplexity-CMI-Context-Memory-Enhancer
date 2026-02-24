@@ -11,35 +11,40 @@
 // ==/UserScript==
 
 (function () {
-  'use strict';
+  "use strict";
 
   // --- Logging ---
   const DEBUG = true;
-  const log = (action, data = '') => {
-    if (DEBUG) console.log(`%c[PPLX-Memory::${action}]`, 'color: #22d3ee; font-weight: bold;', data);
+  const log = (action, data = "") => {
+    if (DEBUG)
+      console.log(
+        `%c[PPLX-Memory::${action}]`,
+        "color: #22d3ee; font-weight: bold;",
+        data,
+      );
   };
 
-  log('Boot', 'Script 1.8.1 initialized. Credits footer added.');
+  log("Boot", "Script 1.8.1 initialized. Credits footer added.");
 
   // --- Global State ---
-  let memories = GM_getValue('pplx_memories', []);
+  let memories = GM_getValue("pplx_memories", []);
   let isPanelOpen = false;
   let isSubmitting = false;
 
   // States for Editing
   let editingId = null;
-  let draftText = '';
+  let draftText = "";
 
   // --- Panel Setup (Shadow DOM) ---
-  const container = document.createElement('div');
-  container.id = 'pplx-memory-panel-container';
-  container.style.position = 'fixed';
-  container.style.bottom = '24px';
-  container.style.left = '84px';
-  container.style.zIndex = '999999';
+  const container = document.createElement("div");
+  container.id = "pplx-memory-panel-container";
+  container.style.position = "fixed";
+  container.style.bottom = "24px";
+  container.style.left = "84px";
+  container.style.zIndex = "999999";
   document.body.appendChild(container);
 
-  const shadow = container.attachShadow({ mode: 'open' });
+  const shadow = container.attachShadow({ mode: "open" });
 
   // Perplexity-inspired design system colors and styles
   const styles = `
@@ -177,71 +182,74 @@
   const renderPanel = () => {
     shadow.innerHTML = `<style>${styles}</style>`;
 
-    const panel = document.createElement('section');
-    panel.className = `panel ${isPanelOpen ? '' : 'hidden'}`;
+    const panel = document.createElement("section");
+    panel.className = `panel ${isPanelOpen ? "" : "hidden"}`;
     panel.hidden = !isPanelOpen;
 
-    const header = document.createElement('header');
-    const activeCount = memories.filter(m => m.active).length;
+    const header = document.createElement("header");
+    const activeCount = memories.filter((m) => m.active).length;
     header.innerHTML = `<h2>Secure Memory Context<span class="count">(${activeCount} active)</span></h2>`;
 
-    const closeBtn = document.createElement('button');
-    closeBtn.className = 'icon-close';
+    const closeBtn = document.createElement("button");
+    closeBtn.className = "icon-close";
     closeBtn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>`;
-    closeBtn.onclick = () => { isPanelOpen = false; renderPanel(); };
+    closeBtn.onclick = () => {
+      isPanelOpen = false;
+      renderPanel();
+    };
     header.appendChild(closeBtn);
 
-    const ul = document.createElement('ul');
-    ul.className = 'memory-list';
+    const ul = document.createElement("ul");
+    ul.className = "memory-list";
 
     if (memories.length === 0) {
-      const emptyState = document.createElement('li');
-      emptyState.style.padding = '32px 20px';
-      emptyState.style.textAlign = 'center';
-      emptyState.style.color = 'var(--pplx-fg-secondary)';
-      emptyState.style.fontStyle = 'italic';
-      emptyState.textContent = 'No memories added yet.';
+      const emptyState = document.createElement("li");
+      emptyState.style.padding = "32px 20px";
+      emptyState.style.textAlign = "center";
+      emptyState.style.color = "var(--pplx-fg-secondary)";
+      emptyState.style.fontStyle = "italic";
+      emptyState.textContent = "No memories added yet.";
       ul.appendChild(emptyState);
     } else {
       const fragment = document.createDocumentFragment();
       memories.forEach((mem, index) => {
-        const li = document.createElement('li');
-        li.className = `memory-item ${editingId === mem.id ? 'editing' : ''}`;
+        const li = document.createElement("li");
+        li.className = `memory-item ${editingId === mem.id ? "editing" : ""}`;
 
-        const checkboxWrapper = document.createElement('div');
-        checkboxWrapper.className = 'checkbox-wrapper';
+        const checkboxWrapper = document.createElement("div");
+        checkboxWrapper.className = "checkbox-wrapper";
 
-        const checkbox = document.createElement('input');
-        checkbox.type = 'checkbox';
+        const checkbox = document.createElement("input");
+        checkbox.type = "checkbox";
         checkbox.id = `mem-check-${index}`;
         checkbox.checked = mem.active;
         checkbox.onchange = (e) => {
           memories[index].active = e.target.checked;
-          GM_setValue('pplx_memories', memories);
+          GM_setValue("pplx_memories", memories);
           renderPanel();
         };
 
-        const checkboxStyled = document.createElement('label');
-        checkboxStyled.className = 'checkbox-styled';
-        checkboxStyled.setAttribute('for', `mem-check-${index}`);
+        const checkboxStyled = document.createElement("label");
+        checkboxStyled.className = "checkbox-styled";
+        checkboxStyled.setAttribute("for", `mem-check-${index}`);
         checkboxStyled.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
 
         checkboxWrapper.appendChild(checkbox);
         checkboxWrapper.appendChild(checkboxStyled);
 
-        const body = document.createElement('div');
-        body.className = 'memory-body';
+        const body = document.createElement("div");
+        body.className = "memory-body";
 
-        const content = document.createElement('div');
-        content.className = 'memory-content';
+        const content = document.createElement("div");
+        content.className = "memory-content";
         content.textContent = mem.text;
 
-        const actions = document.createElement('div');
-        actions.className = 'memory-actions';
+        const actions = document.createElement("div");
+        actions.className = "memory-actions";
 
-        const copyBtn = document.createElement('button');
-        copyBtn.className = 'icon-action';
-        copyBtn.title = 'Copy to clipboard';
+        const copyBtn = document.createElement("button");
+        copyBtn.className = "icon-action";
+        copyBtn.title = "Copy to clipboard";
         copyBtn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>`;
         copyBtn.onclick = () => {
           navigator.clipboard.writeText(mem.text);
@@ -251,32 +259,35 @@
           }, 1500);
         };
 
-        const editBtn = document.createElement('button');
-        editBtn.className = 'icon-action';
-        editBtn.title = 'Edit memory';
+        const editBtn = document.createElement("button");
+        editBtn.className = "icon-action";
+        editBtn.title = "Edit memory";
         editBtn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>`;
         editBtn.onclick = () => {
           editingId = mem.id;
           draftText = mem.text;
           renderPanel();
           setTimeout(() => {
-            const ta = shadow.querySelector('textarea');
-            if (ta) { ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); }
+            const ta = shadow.querySelector("textarea");
+            if (ta) {
+              ta.focus();
+              ta.setSelectionRange(ta.value.length, ta.value.length);
+            }
           }, 50);
         };
 
-        const delBtn = document.createElement('button');
-        delBtn.className = 'icon-action icon-delete';
-        delBtn.title = 'Delete memory';
+        const delBtn = document.createElement("button");
+        delBtn.className = "icon-action icon-delete";
+        delBtn.title = "Delete memory";
         delBtn.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>`;
         delBtn.onclick = () => {
-          if (confirm('Are you sure you want to delete this memory block?')) {
+          if (confirm("Are you sure you want to delete this memory block?")) {
             memories.splice(index, 1);
             if (editingId === mem.id) {
               editingId = null;
-              draftText = '';
+              draftText = "";
             }
-            GM_setValue('pplx_memories', memories);
+            GM_setValue("pplx_memories", memories);
             renderPanel();
           }
         };
@@ -295,17 +306,17 @@
       ul.appendChild(fragment);
     }
 
-    const inputGroup = document.createElement('div');
-    inputGroup.className = 'input-group';
+    const inputGroup = document.createElement("div");
+    inputGroup.className = "input-group";
 
-    const hint = document.createElement('div');
-    hint.className = 'hint';
+    const hint = document.createElement("div");
+    hint.className = "hint";
     hint.innerHTML = `
       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
       <span>Use safe, declarative structures like <code>[SYSTEM]</code> blocks. Avoid ambiguous separators (e.g., <code>---</code>) or imperative "ignore" commands.</span>
     `;
 
-    const textarea = document.createElement('textarea');
+    const textarea = document.createElement("textarea");
     textarea.placeholder = `[SYSTEM]\nYou will act as a Precision Technical Assistant, Senior Software Engineer, and Technical Writer proficient in Markdown.\nAPI Temperature: 0.2 (code & facts) / 0.3 (conceptual analysis).\n\n[ABSOLUTE CONSTRAINTS]\n- Never invent data or references...\n...`;
 
     textarea.value = draftText;
@@ -313,48 +324,48 @@
       draftText = e.target.value;
     };
 
-    const actionRow = document.createElement('div');
-    actionRow.className = 'action-row';
+    const actionRow = document.createElement("div");
+    actionRow.className = "action-row";
 
-    const mainBtn = document.createElement('button');
-    mainBtn.className = 'primary';
+    const mainBtn = document.createElement("button");
+    mainBtn.className = "primary";
 
     if (editingId) {
-      mainBtn.textContent = 'Update Memory Block';
+      mainBtn.textContent = "Update Memory Block";
       mainBtn.onclick = () => {
         const text = draftText.trim();
         if (text) {
-          const index = memories.findIndex(m => m.id === editingId);
+          const index = memories.findIndex((m) => m.id === editingId);
           if (index !== -1) memories[index].text = text;
-          GM_setValue('pplx_memories', memories);
+          GM_setValue("pplx_memories", memories);
           editingId = null;
-          draftText = '';
+          draftText = "";
           renderPanel();
         }
       };
 
-      const cancelBtn = document.createElement('button');
-      cancelBtn.className = 'cancel';
-      cancelBtn.textContent = 'Cancel';
+      const cancelBtn = document.createElement("button");
+      cancelBtn.className = "cancel";
+      cancelBtn.textContent = "Cancel";
       cancelBtn.onclick = () => {
         editingId = null;
-        draftText = '';
+        draftText = "";
         renderPanel();
       };
 
       actionRow.appendChild(cancelBtn);
     } else {
-      mainBtn.textContent = 'Add Safe Memory Block';
+      mainBtn.textContent = "Add Safe Memory Block";
       mainBtn.onclick = () => {
         const text = draftText.trim();
         if (text) {
           memories.push({ id: Date.now(), text, active: true });
-          GM_setValue('pplx_memories', memories);
-          draftText = '';
+          GM_setValue("pplx_memories", memories);
+          draftText = "";
           renderPanel();
           setTimeout(() => {
-              const list = shadow.querySelector('.memory-list');
-              if (list) list.scrollTop = list.scrollHeight;
+            const list = shadow.querySelector(".memory-list");
+            if (list) list.scrollTop = list.scrollHeight;
           }, 0);
         }
       };
@@ -367,8 +378,8 @@
     inputGroup.appendChild(actionRow);
 
     // Footer Credits Area
-    const credits = document.createElement('div');
-    credits.className = 'credits';
+    const credits = document.createElement("div");
+    credits.className = "credits";
     credits.innerHTML = `
       <span>v1.8.1</span>
       <div class="credits-links">
@@ -397,22 +408,25 @@
 
   // --- Hybrid Button Injection (Native Sidebar or Floating Fallback) ---
   const injectSidebarButton = () => {
-    const existingBtn = document.getElementById('pplx-memory-toggle-btn');
+    const existingBtn = document.getElementById("pplx-memory-toggle-btn");
 
-    const sidebarNav = document.querySelector('.mt-auto.w-full.min-w-0') || document.querySelector('.group\\/sidebar .mt-auto');
+    const sidebarNav =
+      document.querySelector(".mt-auto.w-full.min-w-0") ||
+      document.querySelector(".group\\/sidebar .mt-auto");
 
     if (sidebarNav) {
       if (existingBtn) {
-        if (existingBtn.tagName === 'BUTTON') {
+        if (existingBtn.tagName === "BUTTON") {
           existingBtn.remove();
         } else {
           return;
         }
       }
 
-      const btn = document.createElement('a');
-      btn.id = 'pplx-memory-toggle-btn';
-      btn.className = 'reset interactable-alt py-xs group flex w-full justify-start items-center cursor-pointer after:content-[""] after:opacity-0 after:absolute after:inset-x-xs after:inset-y-px after:rounded-md after:bg-subtler after:pointer-events-none hover:after:opacity-100';
+      const btn = document.createElement("a");
+      btn.id = "pplx-memory-toggle-btn";
+      btn.className =
+        'reset interactable-alt py-xs group flex w-full justify-start items-center cursor-pointer after:content-[""] after:opacity-0 after:absolute after:inset-x-xs after:inset-y-px after:rounded-md after:bg-subtler after:pointer-events-none hover:after:opacity-100';
 
       btn.innerHTML = `
         <div class="flex items-center w-full justify-start">
@@ -441,38 +455,43 @@
       };
 
       sidebarNav.parentNode.insertBefore(btn, sidebarNav);
-
     } else {
       if (existingBtn) {
-        if (existingBtn.tagName === 'A') {
+        if (existingBtn.tagName === "A") {
           existingBtn.remove();
         } else {
           return;
         }
       }
 
-      const fab = document.createElement('button');
-      fab.id = 'pplx-memory-toggle-btn';
+      const fab = document.createElement("button");
+      fab.id = "pplx-memory-toggle-btn";
 
-      fab.style.position = 'fixed';
-      fab.style.bottom = '24px';
-      fab.style.right = '24px';
-      fab.style.width = '48px';
-      fab.style.height = '48px';
-      fab.style.borderRadius = '24px';
-      fab.style.backgroundColor = '#1f1f1f';
-      fab.style.color = '#22d3ee';
-      fab.style.border = '1px solid #3a3a3a';
-      fab.style.boxShadow = '0 4px 12px rgba(0,0,0,0.3)';
-      fab.style.zIndex = '999998';
-      fab.style.cursor = 'pointer';
-      fab.style.display = 'flex';
-      fab.style.alignItems = 'center';
-      fab.style.justifyContent = 'center';
-      fab.style.transition = 'transform 0.2s ease, background-color 0.2s ease';
+      fab.style.position = "fixed";
+      fab.style.bottom = "24px";
+      fab.style.right = "24px";
+      fab.style.width = "48px";
+      fab.style.height = "48px";
+      fab.style.borderRadius = "24px";
+      fab.style.backgroundColor = "#1f1f1f";
+      fab.style.color = "#22d3ee";
+      fab.style.border = "1px solid #3a3a3a";
+      fab.style.boxShadow = "0 4px 12px rgba(0,0,0,0.3)";
+      fab.style.zIndex = "999998";
+      fab.style.cursor = "pointer";
+      fab.style.display = "flex";
+      fab.style.alignItems = "center";
+      fab.style.justifyContent = "center";
+      fab.style.transition = "transform 0.2s ease, background-color 0.2s ease";
 
-      fab.onmouseover = () => { fab.style.transform = 'scale(1.05)'; fab.style.backgroundColor = '#282828'; };
-      fab.onmouseout = () => { fab.style.transform = 'scale(1)'; fab.style.backgroundColor = '#1f1f1f'; };
+      fab.onmouseover = () => {
+        fab.style.transform = "scale(1.05)";
+        fab.style.backgroundColor = "#282828";
+      };
+      fab.onmouseout = () => {
+        fab.style.transform = "scale(1)";
+        fab.style.backgroundColor = "#1f1f1f";
+      };
 
       fab.innerHTML = `
         <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" fill="none" stroke-linecap="round" stroke-linejoin="round">
@@ -498,96 +517,100 @@
 
   // --- Secondary Prevention (Ghost Events) ---
   const blockGhostEvents = (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      const editor = e.target.closest('#ask-input');
-      if (editor && memories.filter(m => m.active).length > 0) {
+    if (e.key === "Enter" && !e.shiftKey) {
+      const editor = e.target.closest("#ask-input");
+      if (editor && memories.filter((m) => m.active).length > 0) {
         e.stopPropagation();
         e.stopImmediatePropagation();
       }
     }
   };
 
-  document.addEventListener('keypress', blockGhostEvents, { capture: true });
-  document.addEventListener('keyup', blockGhostEvents, { capture: true });
+  document.addEventListener("keypress", blockGhostEvents, { capture: true });
+  document.addEventListener("keyup", blockGhostEvents, { capture: true });
 
   // --- Injection Engine (Lexical Append + Safe Declarative Context) ---
-  document.addEventListener('keydown', (e) => {
-    if (e.__pplxInjected) return;
+  document.addEventListener(
+    "keydown",
+    (e) => {
+      if (e.__pplxInjected) return;
 
-    if (e.key === 'Enter' && !e.shiftKey) {
-      const editor = e.target.closest('#ask-input');
-      if (!editor) return;
+      if (e.key === "Enter" && !e.shiftKey) {
+        const editor = e.target.closest("#ask-input");
+        if (!editor) return;
 
-      const activeMemories = memories.filter(m => m.active);
-      if (activeMemories.length === 0) return;
+        const activeMemories = memories.filter((m) => m.active);
+        if (activeMemories.length === 0) return;
 
-      const originalText = editor.innerText.trim();
-      if (!originalText) return;
+        const originalText = editor.innerText.trim();
+        if (!originalText) return;
 
-      if (isSubmitting) {
-        e.preventDefault();
-        e.stopPropagation();
-        return;
-      }
-
-      e.preventDefault();
-      e.stopImmediatePropagation();
-
-      isSubmitting = true;
-
-      const memoriesText = activeMemories.map(m => m.text).join('\n\n');
-      const escapedMemoriesHtml = memoriesText
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;")
-        .replace(/\n/g, '<br>');
-
-      const safeTag = "Additional User Context:";
-      const plainPayload = `\r\n\r\n\r\n**[${safeTag}]**\r\n${memoriesText}\r\n\r\n`;
-      const htmlPayload = `<p>&nbsp;</p><p>&nbsp;</p><p><strong>[${safeTag}]</strong></p><p>${escapedMemoriesHtml}</p><p>&nbsp;</p>`;
-
-      editor.focus();
-
-      const sel = window.getSelection();
-      if (sel.rangeCount > 0) {
-        const range = sel.getRangeAt(0);
-        range.collapse(false);
-      }
-
-      const dt = new DataTransfer();
-      dt.setData('text/plain', plainPayload);
-      dt.setData('text/html', htmlPayload);
-
-      const pasteEvent = new ClipboardEvent('paste', {
-        bubbles: true,
-        cancelable: true,
-        clipboardData: dt
-      });
-
-      editor.dispatchEvent(pasteEvent);
-      log('Inject', 'Memory block appended with safe semantic framing.');
-
-      setTimeout(() => {
-        const submitBtn = document.querySelector('button[aria-label="Submit"]');
-
-        if (submitBtn && !submitBtn.disabled) {
-          submitBtn.click();
-          log('Submit', 'Native Submit button triggered.');
-        } else {
-          log('Error', 'Submit button not found or disabled.');
+        if (isSubmitting) {
+          e.preventDefault();
+          e.stopPropagation();
+          return;
         }
 
-        setTimeout(() => {
-          isSubmitting = false;
-        }, 1000);
+        e.preventDefault();
+        e.stopImmediatePropagation();
 
-      }, 100);
-    }
-  }, { capture: true });
+        isSubmitting = true;
+
+        const memoriesText = activeMemories.map((m) => m.text).join("\n\n");
+        const escapedMemoriesHtml = memoriesText
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#039;")
+          .replace(/\n/g, "<br>");
+
+        const safeTag = "Additional User Context:";
+        const plainPayload = `\r\n\r\n\r\n**[${safeTag}]**\r\n${memoriesText}\r\n\r\n`;
+        const htmlPayload = `<p>&nbsp;</p><p>&nbsp;</p><p><strong>[${safeTag}]</strong></p><p>${escapedMemoriesHtml}</p><p>&nbsp;</p>`;
+
+        editor.focus();
+
+        const sel = window.getSelection();
+        if (sel.rangeCount > 0) {
+          const range = sel.getRangeAt(0);
+          range.collapse(false);
+        }
+
+        const dt = new DataTransfer();
+        dt.setData("text/plain", plainPayload);
+        dt.setData("text/html", htmlPayload);
+
+        const pasteEvent = new ClipboardEvent("paste", {
+          bubbles: true,
+          cancelable: true,
+          clipboardData: dt,
+        });
+
+        editor.dispatchEvent(pasteEvent);
+        log("Inject", "Memory block appended with safe semantic framing.");
+
+        setTimeout(() => {
+          const submitBtn = document.querySelector(
+            'button[aria-label="Submit"]',
+          );
+
+          if (submitBtn && !submitBtn.disabled) {
+            submitBtn.click();
+            log("Submit", "Native Submit button triggered.");
+          } else {
+            log("Error", "Submit button not found or disabled.");
+          }
+
+          setTimeout(() => {
+            isSubmitting = false;
+          }, 1000);
+        }, 100);
+      }
+    },
+    { capture: true },
+  );
 
   // Initial Boot
   renderPanel();
-
 })();
